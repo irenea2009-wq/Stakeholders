@@ -19,7 +19,7 @@ def get_participation_plan(data):
 
 # --- SIDEBAR OR PERMANENT DISPLAY FOR CURRENT PLAN ---
 if len(st.session_state.plan) > 0:
-    st.sidebar.subheader("📋 Plan actuel en cours")
+    st.sidebar.subheader("📋 Current plan")
     sidebar_df = pd.DataFrame(st.session_state.plan)
     sidebar_df.index = range(1, len(sidebar_df) + 1)
     st.sidebar.dataframe(sidebar_df[['Name', 'Level of Participation']])
