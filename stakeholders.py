@@ -21,6 +21,7 @@ def get_participation_plan(data):
 if len(st.session_state.plan) > 0:
     st.sidebar.subheader("📋 Plan actuel en cours")
     sidebar_df = pd.DataFrame(st.session_state.plan)
+    sidebar_df.index = range(1, len(sidebar_df) + 1)
     st.sidebar.dataframe(sidebar_df[['Name', 'Level of Participation']])
     
     if st.sidebar.button("🔄 Back to full plan / Export"):
@@ -85,6 +86,7 @@ elif st.session_state.step == 3:
     # Affichage immédiat du résultat pour ce stakeholder
     st.subheader("Last stakeholder added :")
     latest_df = pd.DataFrame([st.session_state.plan[-1]])
+    latest_df.index = [len(st.session_state.plan)]
     st.dataframe(latest_df)
 
     col1, col2 = st.columns(2)
@@ -101,11 +103,12 @@ elif st.session_state.step == 3:
 elif st.session_state.step == 4:
     st.subheader("Final Participation Plan")
     df = pd.DataFrame(st.session_state.plan)
+    df.index = range(1, len(df) + 1)
     st.dataframe(df)
     
     col1, col2 = st.columns(2)
     with col1:
-        csv = df.to_csv(index=False).encode('utf-8')
+        csv = df.to_csv(index=True).encode('utf-8')
         st.download_button("📥 Download Plan as CSV", csv, "participation_plan.csv", "text/csv")
     with col2:
         if st.button("➕ Add another stakeholder (back)"):
