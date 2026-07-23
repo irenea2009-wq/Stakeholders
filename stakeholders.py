@@ -6,8 +6,9 @@ st.title("Stakeholder Engagement & Participation Plan")
 # Initialize session state for tracking
 if 'step' not in st.session_state: st.session_state.step = 1
 if 'plan' not in st.session_state: st.session_state.plan = []
+if 'temp_data' not in st.session_state: st.session_state.temp_data = {}
 
-# --- EXACT CHARACTERIZATION LOGIC BASED ON YOUR TABLE ---
+# --- EXACT CHARACTERIZATION LOGIC (STEP 2A) ---
 def determine_stakeholder_type(affected, affects, wants, can):
     if affected == 'Yes' and affects == 'Yes' and wants == 'Yes' and can == 'Yes':
         return "Standard Stakeholder"
@@ -38,23 +39,61 @@ def determine_stakeholder_type(affected, affects, wants, can):
     else:
         return "Other Stakeholder"
 
-# --- RECOMMENDATION / PARTICIPATION PLAN LOGIC ---
+# --- COMPREHENSIVE PARTICIPATION LEVEL & TECHNIQUE LOGIC (MATCHING THE AUTOMATED MATRIX) ---
 def get_participation_plan(st_type, alliance, expertise, power, other, time):
+    # Standard Stakeholder Rules
     if "Standard Stakeholder" in st_type:
-        if expertise == 'Yes' and power == 'Yes':
-            return "Co-decision", "Workshops / Deliberative forums / Joint committees"
-        else:
-            return "Collaboration", "Working groups / Joint project design"
+        if alliance == "Ally":
+            if expertise == "Yes":
+                if power == "Yes":
+                    if other == "Yes" and time == "Yes":
+                        return "Co-decision", "Workshops / Deliberative forums / Joint committees"
+                    elif other == "Yes" and time == "No":
+                        return "Collaboration", "Working groups with flexible timelines"
+                    elif other == "No" and time == "Yes":
+                        return "Co-decision", "Joint steering committees"
+                    else:
+                        return "Collaboration", "Joint working groups"
+                else: # Power == "No"
+                    return "Collaboration", "Consultation workshops / Focus groups"
+            else: # Expertise == "No"
+                return "Consultation", "Public consultations / Surveys"
+        elif alliance == "Potential ally":
+            return "Collaboration", "Bilateral meetings / Constructive dialogues"
+        else: # Blind resources / Unwilling / Other
+            return "Consultation / Information", "Targeted briefings / Impact mitigation reviews"
+
+    # Interested Stakeholder Rules
     elif "Interested Stakeholder" in st_type:
-        return "Collaboration", "Consultation meetings / Focus groups / Surveys"
+        if alliance == "Ally":
+            if expertise == "Yes":
+                return "Collaboration", "Expert panels / Stakeholder advisory committees"
+            else:
+                return "Consultation", "Public surveys / Information sessions"
+        else:
+            return "Consultation", "Open forums / Information feedback channels"
+
+    # Fiduciary Stakeholder Rules
     elif "Fiduciary Stakeholder" in st_type:
-        return "Consultation", "Public hearings / Formal feedback sessions"
-    elif "Unwilling Stakeholder" in st_type:
-        return "Information / Impact Management", "Targeted communication / Mitigation reporting"
+        if alliance == "Ally":
+            return "Co-decision / Consultation", "Formal institutional coordination meetings"
+        else:
+            return "Consultation", "Official hearings / Compliance reporting"
+
+    # Unwilling Stakeholder Rules
+    elif "Unwilling Stakeholder" in st_type or "Unwilling fiduciary" in st_type:
+        return "Information / Impact Management", "Targeted transparency reporting / Conflict mitigation framework"
+
+    # Silent Stakeholder Rules
     elif "Silent stakeholder" in st_type:
-        return "Consultation", "Proactive outreach / Surveys / Informational interviews"
+        return "Consultation", "Proactive outreach / Targeted interviews / Surveys"
+
+    # Default fallback mapping
     else:
-        return "Information", "Newsletters / Website / Public updates"
+        if power == "Yes":
+            return "Collaboration", "Bilateral discussions / Negotiation sessions"
+        else:
+            return "Information", "Public newsletters / Informational reports / Website updates"
 
 # --- SIDEBAR DISPLAY FOR CURRENT PLAN ---
 if len(st.session_state.plan) > 0:
@@ -67,6 +106,7 @@ if len(st.session_state.plan) > 0:
         st.session_state.step = 4
         st.rerun()
     if st.sidebar.button("➕ Add another stakeholder"):
+        st.session_state.temp_data = {}  # Reset temp data for a clean form
         st.session_state.step = 1
         st.rerun()
     st.sidebar.divider()
@@ -74,12 +114,25 @@ if len(st.session_state.plan) > 0:
 # --- STEP 1: CHARACTERIZATION (QUESTIONS) ---
 if st.session_state.step == 1:
     st.header("Step 1: Characterize Stakeholder")
+    
+    # Retrieve pre-filled values if returning from step 1.5
+    saved_name = st.session_state.temp_data.get('Name', '')
+    saved_affected = st.session_state.temp_data.get('Affected', 'Yes')
+    saved_affects = st.session_state.temp_data.get('Affects', 'Yes')
+    saved_wants = st.session_state.temp_data.get('Wants', 'Yes')
+    saved_can = st.session_state.temp_data.get('Can', 'Yes')
+
+    affected_options = ["Yes", "No"]
+    affects_options = ["Yes", "No"]
+    wants_options = ["Yes", "No"]
+    can_options = ["Yes", "No"]
+
     with st.form("stage1"):
-        name = st.text_input("Name of the Stakeholder")
-        affected = st.selectbox("Is this stakeholder affected by the issue or project?", ["Yes", "No"])
-        affects = st.selectbox("Does this stakeholder affect the issue or project?", ["Yes", "No"])
-        wants = st.selectbox("Does this stakeholder want to participate in the decision process?", ["Yes", "No"])
-        can = st.selectbox("Can this stakeholder participate in the decision process?", ["Yes", "No"])
+        name = st.text_input("Name of the Stakeholder", value=saved_name)
+        affected = st.selectbox("Is this stakeholder affected by the issue or project?", affected_options, index=affected_options.index(saved_affected) if saved_affected in affected_options else 0)
+        affects = st.selectbox("Does this stakeholder affect the issue or project?", affects_options, index=affects_options.index(saved_affects) if saved_affects in affects_options else 0)
+        wants = st.selectbox("Does this stakeholder want to participate in the decision process?", wants_options, index=wants_options.index(saved_wants) if saved_wants in wants_options else 0)
+        can = st.selectbox("Can this stakeholder participate in the decision process?", can_options, index=can_options.index(saved_can) if saved_can in can_options else 0)
         
         if st.form_submit_button("Determine Stakeholder Type"):
             if name.strip() == "":
@@ -94,31 +147,30 @@ if st.session_state.step == 1:
                     'Can': can,
                     'Type of Stakeholder': st_type
                 }
-                # On passe à une nouvelle étape intermédiaire (Étape 1B) pour afficher le type
                 st.session_state.step = 1.5
                 st.rerun()
 
 # --- STEP 1.5: DISPLAY STAKEHOLDER TYPE BEFORE STEP 2 ---
 elif st.session_state.step == 1.5:
     st.header("Step 1 Result: Stakeholder Classification")
-    st.info(f"Le stakeholder **{st.session_state.temp_data['Name']}** is characterized as :")
+    st.info(f"The stakeholder **{st.session_state.temp_data['Name']}** is characterized as:")
     
     st.markdown(f"### 🎯 Type : `{st.session_state.temp_data['Type of Stakeholder']}`")
     
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("➡️ Continue to step 2 (Ressources & Alliance)"):
+        if st.button("➡️ Continue to step 2 (Resources & Alliance)"):
             st.session_state.step = 2
             st.rerun()
     with col2:
-        if st.button("⬅️ Modify answers from step 1"):
+        if st.button("⬅️ Modify the answers from step 1"):
             st.session_state.step = 1
             st.rerun()
 
 # --- STEP 2: RESOURCES & PLAN ---
 elif st.session_state.step == 2:
     st.header(f"Step 2: Refine for {st.session_state.temp_data['Name']}")
-    st.write(f"Type actuel : **{st.session_state.temp_data['Type of Stakeholder']}**")
+    st.write(f"Current Type: **{st.session_state.temp_data['Type of Stakeholder']}**")
     
     with st.form("stage2"):
         alliance = st.selectbox("Potential for alliance", ["Ally", "Potential ally", "Blind resources"])
@@ -151,6 +203,7 @@ elif st.session_state.step == 2:
             }
             
             st.session_state.plan.append(final_entry)
+            st.session_state.temp_data = {}  # Reset temporary inputs
             st.session_state.step = 3
             st.rerun()
 
@@ -158,7 +211,7 @@ elif st.session_state.step == 2:
 elif st.session_state.step == 3:
     st.success("Stakeholder added successfully!")
     
-    st.subheader("Last stakeholder added :")
+    st.subheader("Last stakeholder added:")
     latest_df = pd.DataFrame([st.session_state.plan[-1]])
     latest_df.index = [len(st.session_state.plan)]
     st.dataframe(latest_df)
@@ -166,6 +219,7 @@ elif st.session_state.step == 3:
     col1, col2 = st.columns(2)
     with col1:
         if st.button("➕ Add another stakeholder"):
+            st.session_state.temp_data = {}
             st.session_state.step = 1
             st.rerun()
     with col2:
@@ -186,5 +240,6 @@ elif st.session_state.step == 4:
         st.download_button("📥 Download Plan as CSV", csv, "participation_plan.csv", "text/csv")
     with col2:
         if st.button("➕ Add another stakeholder (back)"):
+            st.session_state.temp_data = {}
             st.session_state.step = 1
             st.rerun()
